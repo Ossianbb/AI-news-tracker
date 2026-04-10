@@ -293,21 +293,228 @@ Use these prompt patterns throughout the project:
 
 ---
 
-## V2 ideas (don't build yet)
+## V2 — UI Design Pass, Email Sources & Personalisation
 
-These are parked for after the MVP is solid:
+MVP is complete (phases 1-5). V2 adds three capabilities in four phases, ordered so each builds on the last: reusable UI components first (needed by settings pages), then personalisation (needs those components), then email sources (benefits from personalised scoring), then polish.
 
-- Interest profile tuning (weight topics you care about more)
-- Source quality weighting (trust some sources more than others)
+**MCP tools used during development:**
+- **Playwright MCP** — screenshot pages after UI changes instead of manually opening the browser
+- **Gmail MCP** — inspect inbox and test newsletter parsing during Phase 8 development
+
+---
+
+## Phase 6 — UI Foundation & Design Pass
+
+**Goal:** Fix design issues, add dark mode, create reusable components, improve accessibility.
+
+**Claude Code skills to practise:** MCP tool usage (Playwright), component extraction, design systems, accessibility.
+
+### Tasks
+
+**6.1 — Fix font override**
+
+Remove the `body { font-family: Arial }` rule in `app/globals.css` that overrides the Geist fonts already configured in `layout.tsx`.
+
+**6.2 — Add system-automatic dark mode**
+
+Add `@media (prefers-color-scheme: dark)` block in `app/globals.css` redefining CSS variables. Add `dark:` Tailwind variants to all components: NavBar, ArticleCard, DigestView, SaveButton, ConceptLevelPicker, and all pages. Follows OS setting automatically — no manual toggle.
+
+**6.3 — Create reusable Button component**
+
+New file: `components/ui/Button.tsx`. Variants: primary (blue), secondary (outlined), ghost (text-only). Sizes: sm, md, lg. Replace inline button styles across quiz page, knowledge page, learn page.
+
+**6.4 — Create reusable Input component**
+
+New file: `components/ui/Input.tsx`. Extract search input pattern from DigestView. Include `aria-label` prop. Reuse in learn page search and settings page (Phase 7).
+
+**6.5 — Improve ArticleCard**
+
+Add left border colour by importance (red >= 8, amber >= 6, grey < 6). Add ARIA labels to save button and article link. Export `ArticleCardSkeleton` for loading states.
+
+**6.6 — Improve progress bars**
+
+Colour-code by coverage: red < 25%, amber 25-50%, green > 50%. Show percentage text beside each bar.
+
+**6.7 — Add loading skeletons**
+
+New file: `components/ui/Skeleton.tsx`. Simple pulsing placeholder. Use in DigestView, learn page, knowledge page while data fetches.
+
+**6.8 — Add ARIA labels throughout**
+
+Add `aria-label` to all interactive elements missing text labels in DigestView, NavBar, SaveButton, ArticleCard, quiz page. Add `role="search"` to search input wrappers.
+
+**6.9 — Extract quiz option styles**
+
+Move long inline conditional class strings in `app/knowledge/quiz/page.tsx` into a helper function.
+
+**6.10 — Playwright visual verification**
+
+Use Playwright MCP to screenshot every page at desktop (1280x720) and mobile (375x812). Verify dark mode, new components, accessibility. Development workflow only — no app code.
+
+### Phase 6 checkpoint
+
+- [ ] Geist fonts rendering correctly
+- [ ] Dark mode follows OS setting on all pages
+- [ ] Reusable Button, Input, Skeleton components
+- [ ] ArticleCard has importance border + ARIA labels
+- [ ] Progress bars colour-coded
+- [ ] Loading skeletons on data-fetching pages
+- [ ] Playwright screenshots confirm all pages look correct
+
+---
+
+## Phase 7 — Interest Profile & Personalised Scoring
+
+**Goal:** Add user preferences that influence article ranking. Single-user, localStorage-based.
+
+**Claude Code skills to practise:** State management, API design, building settings UIs.
+
+### Tasks
+
+**7.1 — Define InterestProfile type**
+
+Add to `types/index.ts`:
+```typescript
+type InterestProfile = {
+  topicWeights: Record<string, number>;    // 0-2, default 1.0
+  sourceWeights: Record<string, number>;   // 0-2, default 1.0
+  topicReadCounts: Record<string, number>; // auto-tracked
+};
+```
+
+**7.2 — Create InterestProfileProvider**
+
+New file: `components/InterestProfileProvider.tsx`. Same pattern as KnowledgeProvider — localStorage, context, hooks. Provides `getTopicWeight`, `setTopicWeight`, `getSourceWeight`, `setSourceWeight`. Auto-increments `topicReadCounts` when articles are marked read. Wrap in `layout.tsx`.
+
+**7.3 — Build settings page**
+
+New file: `app/settings/page.tsx`. Two sections: topic preferences (suppress/normal/boost per topic) and source preferences (suppress/normal/boost per source). Add Settings link to NavBar.
+
+**7.4 — Create personalisation API endpoint**
+
+New file: `app/api/personalize/route.ts`. POST accepts `InterestProfile`, reads `digest.json`, applies adjustments on top of base scores (topic boost, source boost, reading frequency boost), returns re-ranked articles. Keeps `lib/scoring.ts` untouched — personalisation is a separate layer.
+
+**7.5 — Update DigestView to use personalised scoring**
+
+On mount, if user has an interest profile, POST to `/api/personalize` and re-sort articles. Fall back to default order on failure.
+
+**7.6 — Auto-track reading patterns**
+
+When `markRead` fires in KnowledgeProvider, also update InterestProfileProvider's `topicReadCounts` for the article's topics.
+
+**7.7 — Knowledge-weighted concept recommendations**
+
+Sort concepts on learn page: unassessed and "new" first, "know-it-well" last. Surface concepts related to frequently-read topics higher.
+
+### Phase 7 checkpoint
+
+- [ ] InterestProfile stored in localStorage
+- [ ] Settings page with topic and source weight controls
+- [ ] `/api/personalize` re-ranks articles based on preferences
+- [ ] DigestView shows personalised article order
+- [ ] Reading history auto-updates topic read counts
+- [ ] Concept recommendations reflect knowledge level
+
+---
+
+## Phase 8 — Email Newsletter Sources (Gmail Integration)
+
+**Goal:** Ingest email newsletters alongside RSS feeds. Use Gmail MCP during development, `googleapis` package in production.
+
+**Claude Code skills to practise:** MCP tool usage (Gmail), API integration, HTML parsing, extending existing pipelines.
+
+**Target newsletters:** TLDR AI, The Batch (Andrew Ng), Import AI (Jack Clark), Ben's Bites, The Neuron, Every, The Rundown AI.
+
+### Tasks
+
+**8.1 — Extend source type system**
+
+Update `lib/sources.ts` with typed union:
+```typescript
+type RssSource = { type: "rss"; name: string; url: string };
+type EmailSource = { type: "email"; name: string; senderEmail: string };
+type Source = RssSource | EmailSource;
+```
+Add email sources for all 7 newsletters.
+
+**8.2 — Set up Google API credentials**
+
+Create Google Cloud project, enable Gmail API, create OAuth 2.0 credentials, get refresh token (one-time manual flow). Add credentials to `.env.local`. New file: `lib/gmail.ts` — Gmail client using `googleapis` package.
+
+Install: `googleapis` npm package.
+
+**8.3 — Build email content extractor**
+
+New file: `lib/email-parser.ts`. Strips HTML, splits newsletter body into individual story items, extracts title/URL/summary for each. Start with TLDR AI (most structured format), add other newsletter parsers incrementally.
+
+**8.4 — Create email ingestion handler**
+
+Update `lib/ingest.ts` — add `fetchEmailSource()` alongside existing `fetchFeed()`. Update `ingestAll()` to handle both source types via `source.type` discriminant.
+
+**8.5 — Update scoring for email sources**
+
+Add source weights to `lib/scoring.ts`: Import AI (4), The Batch (4), TLDR AI (3), Ben's Bites (3), The Neuron (3), Every (3), The Rundown AI (3).
+
+**8.6 — Add mock newsletter articles**
+
+Add 3-4 mock articles with newsletter source names to `data/mock-articles.ts` so the app works without Gmail credentials.
+
+### Phase 8 checkpoint
+
+- [ ] Source type system supports RSS and email
+- [ ] Gmail API client connects and fetches emails
+- [ ] Email parser extracts articles from at least TLDR AI
+- [ ] Pipeline ingests newsletter articles alongside RSS
+- [ ] Newsletter articles appear in digest with correct scoring
+- [ ] App works without Gmail credentials (falls back to mock data)
+
+---
+
+## Phase 9 — Polish & Integration
+
+**Goal:** Error handling, edge cases, full visual regression, documentation.
+
+### Tasks
+
+**9.1 — Add error boundary**
+
+New file: `components/ErrorBoundary.tsx`. Wrap main content in `layout.tsx`.
+
+**9.2 — Edge case handling**
+
+- Gmail credentials missing: skip email sources silently
+- No articles after personalisation: show "adjust your preferences" message
+- localStorage unavailable: degrade to in-memory fallback
+
+**9.3 — Playwright full visual regression**
+
+Screenshot every page at desktop + mobile. Verify dark mode, settings, newsletter articles, personalised ordering.
+
+**9.4 — Update CLAUDE.md and PLAN.md**
+
+Document: InterestProfile, email ingestion, settings page, `/api/personalize`, new source types, Gmail setup.
+
+### Phase 9 checkpoint
+
+- [ ] Error boundary catches render crashes
+- [ ] Graceful degradation for missing credentials / empty states
+- [ ] All pages verified via Playwright at desktop + mobile
+- [ ] Documentation updated
+
+---
+
+## V3 ideas (don't build yet)
+
+These are parked for after V2 is solid:
+
 - Concept dependency graph visualisation
-- Email digest export
 - Tweet/X post paste that auto-extracts and explains concepts
 - Flashcard mode for concept revision
 - Timeline view for tracking how a story develops
 - Category briefings (e.g., "models this week", "policy this week")
 - Notes and annotations on saved items
 - SQLite migration for better querying
-- MCP integrations (Notion for notes, GitHub for project tracking)
+- Email digest export
 - Custom Claude Code skills (news-analyst, concept-explainer, quiz-writer)
 - Claude Code hooks (lint after edits, README updates, schema change warnings)
 
@@ -315,13 +522,21 @@ These are parked for after the MVP is solid:
 
 ## What success looks like
 
-After Phase 4, you should be able to:
+After Phase 5 (MVP), you should be able to:
 
 1. Open the app and see today's important AI news, ranked and explained
 2. Paste any AI term or tweet and get a clear, structured explanation
 3. See what you've learned and where your gaps are
 4. Take quizzes to test your understanding
 5. Have a growing personal knowledge base of AI concepts
+
+After Phase 9 (V2), you should also be able to:
+
+6. See the app in dark mode that follows your OS setting
+7. Set topic and source preferences that change how articles are ranked
+8. See newsletter articles from your inbox alongside RSS articles
+9. Get concept recommendations tailored to your reading patterns
+10. Trust that the app handles errors and edge cases gracefully
 
 And you should have learned:
 
@@ -330,3 +545,6 @@ And you should have learned:
 3. How to iterate and steer when things go wrong
 4. How to build AI-powered features with good prompt engineering
 5. How to work incrementally — commit, test, then move on
+6. How to use MCP tools (Playwright, Gmail) in your development workflow
+7. How to extend an existing pipeline with new data sources
+8. How to build personalisation features on top of existing systems
