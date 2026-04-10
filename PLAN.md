@@ -120,10 +120,10 @@ After: Resize the browser. Does it work on mobile? If not, iterate.
 ### Phase 1 checkpoint
 
 You should now have:
-- [ ] A running Next.js app with four pages
-- [ ] Clean TypeScript types
-- [ ] Realistic mock data
-- [ ] A UI you can click through
+- [x] A running Next.js app with four pages
+- [x] Clean TypeScript types
+- [x] Realistic mock data
+- [x] A UI you can click through
 
 **Claude Code skills gained:** Project scaffolding, component iteration, reading generated code, steering corrections, working with types.
 
@@ -176,12 +176,12 @@ After: Read the generated summaries. Are they useful? Too generic? Iterate on th
 ### Phase 2 checkpoint
 
 You should now have:
-- [ ] Real articles from RSS feeds
-- [ ] Deduplication working
-- [ ] Topic tags on every article
-- [ ] Importance scores
-- [ ] AI-generated "why it matters" for top stories
-- [ ] A manual pipeline you can trigger
+- [x] Real articles from RSS feeds
+- [x] Deduplication working
+- [x] Topic tags on every article
+- [x] Importance scores
+- [x] AI-generated "why it matters" for top stories
+- [x] A manual pipeline you can trigger
 
 **Claude Code skills gained:** Building multi-step data pipelines, working with APIs, error handling, prompt iteration, testing with real data.
 
@@ -215,10 +215,10 @@ After: Click through a chain of related concepts. Does it feel like a useful kno
 
 ### Phase 3 checkpoint
 
-- [ ] Working "explain this" input
-- [ ] AI-generated concept pages with structured output
-- [ ] Concept caching
-- [ ] Related concept navigation
+- [x] Working "explain this" input
+- [x] AI-generated concept pages with structured output
+- [x] Concept caching
+- [x] Related concept navigation
 
 **Claude Code skills gained:** Prompt engineering for structured output, caching strategies, building AI-powered features iteratively.
 
@@ -250,10 +250,10 @@ Prompt: *"Add a quiz feature at app/knowledge/quiz/page.tsx. Use the Anthropic A
 
 ### Phase 4 checkpoint
 
-- [ ] Reading history tracked
-- [ ] Concept understanding self-assessment
-- [ ] Knowledge dashboard showing gaps
-- [ ] AI-generated quizzes
+- [x] Reading history tracked
+- [x] Concept understanding self-assessment
+- [x] Knowledge dashboard showing gaps
+- [x] AI-generated quizzes
 
 ---
 

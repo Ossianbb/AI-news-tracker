@@ -83,7 +83,44 @@ Rules:
       );
     }
 
-    const questions = JSON.parse(text) as QuizQuestion[];
+    const parsed = JSON.parse(text);
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return Response.json(
+        { error: "Quiz generation returned an invalid response. Please try again." },
+        { status: 502 }
+      );
+    }
+
+    const questions: QuizQuestion[] = [];
+    for (const item of parsed) {
+      if (
+        typeof item.question !== "string" ||
+        !Array.isArray(item.options) ||
+        item.options.length !== 4 ||
+        !item.options.every((o: unknown) => typeof o === "string") ||
+        typeof item.correctIndex !== "number" ||
+        item.correctIndex < 0 ||
+        item.correctIndex > 3 ||
+        typeof item.explanation !== "string"
+      ) {
+        continue; // skip malformed questions
+      }
+      questions.push({
+        question: item.question,
+        options: item.options,
+        correctIndex: item.correctIndex,
+        explanation: item.explanation,
+      });
+    }
+
+    if (questions.length === 0) {
+      return Response.json(
+        { error: "Quiz generation returned no valid questions. Please try again." },
+        { status: 502 }
+      );
+    }
+
     return Response.json({ questions });
   } catch (error) {
     console.error("Quiz API error:", error);

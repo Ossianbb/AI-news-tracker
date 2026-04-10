@@ -10,7 +10,11 @@ import type { Concept } from "@/types";
 /** Load all concepts: mock + any AI-generated ones from cache */
 async function getAllConcepts(): Promise<Concept[]> {
   const generated = (await readData<Concept[]>("concepts.json")) ?? [];
-  return [...mockConcepts, ...generated];
+  // Generated concepts take priority over mocks with the same slug
+  const mockOnly = mockConcepts.filter(
+    (mc) => !generated.some((gc) => gc.slug === mc.slug)
+  );
+  return [...generated, ...mockOnly];
 }
 
 export function generateStaticParams() {
@@ -61,7 +65,7 @@ export default async function ConceptPage({
         <h1 className="min-w-0 text-3xl font-bold tracking-tight text-zinc-900">
           {concept.name}
         </h1>
-        <SaveButton itemId={concept.id} itemType="concept" />
+        <SaveButton itemId={concept.id} itemType="concept" data={concept} />
       </div>
 
       {/* Simple explanation */}

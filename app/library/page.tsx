@@ -1,52 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSavedItems } from "@/components/SavedItemsProvider";
-import { mockConcepts } from "@/data/mock-concepts";
 import ArticleCard from "@/components/ArticleCard";
 import type { Article, Concept } from "@/types";
 
 export default function LibraryPage() {
   const { savedItems } = useSavedItems();
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [generatedConcepts, setGeneratedConcepts] = useState<Concept[]>([]);
-
-  // Load real articles and cached concepts
-  useEffect(() => {
-    fetch("/api/articles")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: Article[]) => setArticles(data))
-      .catch(() => {});
-
-    fetch("/api/concepts")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: Concept[]) => setGeneratedConcepts(data))
-      .catch(() => {});
-  }, []);
-
-  const allConcepts = [
-    ...mockConcepts,
-    ...generatedConcepts.filter(
-      (gc) => !mockConcepts.some((mc) => mc.slug === gc.slug)
-    ),
-  ];
 
   const savedArticles = savedItems
-    .filter((item) => item.itemType === "article")
+    .filter((item) => item.itemType === "article" && item.snapshot)
     .map((item) => ({
       ...item,
-      data: articles.find((a) => a.id === item.itemId),
-    }))
-    .filter((item) => item.data !== undefined);
+      data: item.snapshot as Article,
+    }));
 
   const savedConcepts = savedItems
-    .filter((item) => item.itemType === "concept")
+    .filter((item) => item.itemType === "concept" && item.snapshot)
     .map((item) => ({
       ...item,
-      data: allConcepts.find((c) => c.id === item.itemId),
-    }))
-    .filter((item) => item.data !== undefined);
+      data: item.snapshot as Concept,
+    }));
 
   const isEmpty = savedArticles.length === 0 && savedConcepts.length === 0;
 

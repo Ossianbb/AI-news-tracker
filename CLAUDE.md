@@ -39,13 +39,14 @@ RSS feeds (lib/sources.ts) → ingest() → deduplicate() → topics() → scori
 - `GET /api/articles` — returns digest.json (falls back to mock data)
 - `GET /api/concepts` — returns cached concepts.json
 - `POST /api/explain` — generates a Concept via Gemini from user input, caches to concepts.json
-- `POST /api/quiz` — generates quiz questions via Gemini from concept list
+- `POST /api/quiz` — generates quiz questions via Gemini from concept list (validates response shape before returning)
+- `GET|POST /api/pipeline` — triggers RSS pipeline; requires `CRON_SECRET` in production, open in dev
 
 ### Client state
 
 Two React context providers wrap the app in `layout.tsx`:
-- **SavedItemsProvider** — tracks saved articles/concepts (in-memory, not persisted)
-- **KnowledgeProvider** — tracks read articles and concept understanding levels (in-memory)
+- **SavedItemsProvider** — tracks saved articles/concepts in localStorage. Each `SavedItem` stores a full `snapshot` of the article/concept at save time, so saved items survive pipeline refreshes.
+- **KnowledgeProvider** — tracks read articles and concept understanding levels in localStorage.
 
 ### Pages
 
@@ -64,4 +65,7 @@ Two React context providers wrap the app in `layout.tsx`:
 - Generated data files (`digest.json`, `concepts.json`) are gitignored.
 - Mock data in `data/mock-articles.ts` and `data/mock-concepts.ts` serves as fallback.
 - Path alias: `@/*` maps to project root.
-- See `PLAN.md` for the phased build roadmap — currently in Phase 1/2 transition.
+- `POST /api/explain` caches concepts by exact name/slug match only — no substring matching.
+- On concept detail pages, generated concepts take priority over mock concepts with the same slug.
+- Progress and quiz pages fetch live data from `/api/articles` and `/api/concepts`, falling back to mocks.
+- See `PLAN.md` for the phased build roadmap — phases 1-5 complete (MVP done).

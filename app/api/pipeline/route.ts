@@ -7,7 +7,10 @@ import { runPipeline } from "@/lib/pipeline";
  */
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
+  if (!secret) {
+    // Allow unauthenticated access only in local dev
+    return process.env.NODE_ENV !== "production";
+  }
 
   const auth = request.headers.get("authorization");
   const bearerToken = auth?.startsWith("Bearer ") ? auth.slice(7) : null;

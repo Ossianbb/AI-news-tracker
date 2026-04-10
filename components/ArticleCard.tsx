@@ -78,7 +78,7 @@ export default function ArticleCard({ article }: { article: Article }) {
             <TopicTag key={topic} topic={topic} />
           ))}
         </div>
-        <SaveButton itemId={article.id} itemType="article" />
+        <SaveButton itemId={article.id} itemType="article" data={article} />
       </div>
     </article>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
-import type { SavedItem } from "@/types";
+import type { SavedItem, Article, Concept } from "@/types";
 
 const STORAGE_KEY = "savedItems";
 
@@ -18,7 +18,7 @@ function loadFromStorage(): SavedItem[] {
 type SavedItemsContextType = {
   savedItems: SavedItem[];
   isSaved: (itemId: string) => boolean;
-  toggleSave: (itemId: string, itemType: "article" | "concept") => void;
+  toggleSave: (itemId: string, itemType: "article" | "concept", data?: Article | Concept) => void;
 };
 
 const SavedItemsContext = createContext<SavedItemsContextType | null>(null);
@@ -40,7 +40,7 @@ export function SavedItemsProvider({
   );
 
   const toggleSave = useCallback(
-    (itemId: string, itemType: "article" | "concept") => {
+    (itemId: string, itemType: "article" | "concept", data?: Article | Concept) => {
       setSavedItems((prev) => {
         const exists = prev.some((item) => item.itemId === itemId);
         if (exists) {
@@ -48,7 +48,7 @@ export function SavedItemsProvider({
         }
         return [
           ...prev,
-          { itemId, itemType, savedAt: new Date().toISOString() },
+          { itemId, itemType, savedAt: new Date().toISOString(), snapshot: data },
         ];
       });
     },

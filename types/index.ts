@@ -52,6 +52,8 @@ export type SavedItem = {
   itemType: "article" | "concept";
   /** ISO 8601 date string when the item was saved */
   savedAt: string;
+  /** Snapshot of the full article or concept at save time */
+  snapshot?: Article | Concept;
 };
 
 /** Tracks the user's reading history and concept understanding */

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useKnowledge } from "@/components/KnowledgeProvider";
 import { mockConcepts } from "@/data/mock-concepts";
+import type { Concept } from "@/types";
 
 type QuizQuestion = {
   question: string;
@@ -15,23 +16,39 @@ type QuizQuestion = {
 type QuizState = "idle" | "loading" | "playing" | "results";
 
 export default function QuizPage() {
-  const { conceptLevels, readArticleIds } = useKnowledge();
+  const { conceptLevels } = useKnowledge();
   const [state, setState] = useState<QuizState>("idle");
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [showExplanation, setShowExplanation] = useState(false);
   const [error, setError] = useState("");
+  const [allConcepts, setAllConcepts] = useState<Concept[]>(mockConcepts);
+
+  useEffect(() => {
+    fetch("/api/concepts")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: Concept[]) => {
+        const merged = [
+          ...mockConcepts,
+          ...data.filter(
+            (gc) => !mockConcepts.some((mc) => mc.slug === gc.slug)
+          ),
+        ];
+        setAllConcepts(merged);
+      })
+      .catch(() => {});
+  }, []);
 
   // Concepts the user is learning (assessed but not "know-it-well")
-  const learningConcepts = mockConcepts.filter((c) => {
+  const learningConcepts = allConcepts.filter((c) => {
     const level = conceptLevels[c.id];
     return level && level !== "know-it-well";
   });
 
-  // If no concepts assessed, use all mock concepts
+  // If no concepts assessed, use all concepts
   const quizConcepts =
-    learningConcepts.length > 0 ? learningConcepts : mockConcepts;
+    learningConcepts.length > 0 ? learningConcepts : allConcepts;
 
   async function startQuiz() {
     setState("loading");
@@ -55,8 +72,12 @@ export default function QuizPage() {
       }
 
       const data = await res.json();
-      setQuestions(data.questions);
-      setAnswers(new Array(data.questions.length).fill(null));
+      const qq: QuizQuestion[] = data.questions;
+      if (!Array.isArray(qq) || qq.length === 0) {
+        throw new Error("No quiz questions were generated. Please try again.");
+      }
+      setQuestions(qq);
+      setAnswers(new Array(qq.length).fill(null));
       setCurrentIndex(0);
       setShowExplanation(false);
       setState("playing");

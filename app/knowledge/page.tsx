@@ -1,10 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useKnowledge } from "@/components/KnowledgeProvider";
 import { mockArticles } from "@/data/mock-articles";
 import { mockConcepts } from "@/data/mock-concepts";
-import type { ConceptLevel } from "@/types";
+import type { Article, Concept, ConceptLevel } from "@/types";
 
 const levelLabels: Record<ConceptLevel, string> = {
   new: "New to me",
@@ -22,9 +23,30 @@ const levelColors: Record<ConceptLevel, string> = {
 
 export default function KnowledgePage() {
   const { readArticleIds, conceptLevels } = useKnowledge();
+  const [articles, setArticles] = useState<Article[]>(mockArticles);
+  const [generatedConcepts, setGeneratedConcepts] = useState<Concept[]>([]);
+
+  useEffect(() => {
+    fetch("/api/articles")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: Article[]) => { if (data.length > 0) setArticles(data); })
+      .catch(() => {});
+
+    fetch("/api/concepts")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: Concept[]) => setGeneratedConcepts(data))
+      .catch(() => {});
+  }, []);
+
+  const allConcepts = [
+    ...mockConcepts,
+    ...generatedConcepts.filter(
+      (gc) => !mockConcepts.some((mc) => mc.slug === gc.slug)
+    ),
+  ];
 
   // Count articles read per topic
-  const allArticles = mockArticles;
+  const allArticles = articles;
   const topicCounts: Record<string, { read: number; total: number }> = {};
   for (const article of allArticles) {
     for (const topic of article.topics) {
@@ -42,7 +64,7 @@ export default function KnowledgePage() {
 
   // Concept progress
   const assessedConcepts = Object.entries(conceptLevels);
-  const unassessedConcepts = mockConcepts.filter(
+  const unassessedConcepts = allConcepts.filter(
     (c) => !conceptLevels[c.id]
   );
 
@@ -155,7 +177,7 @@ export default function KnowledgePage() {
           </h2>
           <div className="space-y-2">
             {assessedConcepts.map(([id, level]) => {
-              const concept = mockConcepts.find((c) => c.id === id);
+              const concept = allConcepts.find((c) => c.id === id);
               const name = concept?.name ?? id;
               return (
                 <div

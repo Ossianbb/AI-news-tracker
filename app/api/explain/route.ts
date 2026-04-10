@@ -33,13 +33,7 @@ export async function POST(request: Request) {
   const inputLower = input.trim().toLowerCase();
   const inputSlug = inputLower.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const existing = cached.find((c) => {
-    const nameLower = c.name.toLowerCase();
-    return (
-      nameLower === inputLower ||
-      c.slug === inputSlug ||
-      nameLower.includes(inputLower) ||
-      inputLower.includes(nameLower)
-    );
+    return c.name.toLowerCase() === inputLower || c.slug === inputSlug;
   });
   if (existing) {
     return Response.json(existing);
